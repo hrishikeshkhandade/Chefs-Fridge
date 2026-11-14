@@ -4,7 +4,8 @@ import io
 import base64
 import os
 from dotenv import load_dotenv
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import hashlib
 from fpdf import FPDF
 import re
@@ -16,19 +17,21 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 if not GEMINI_API_KEY:
     st.error("API key not found in .env file! Please add GEMINI_API_KEY.")
 
-# Set up Google Gemini
-if GEMINI_API_KEY:
-    genai.configure(api_key=GEMINI_API_KEY)
-    generation_config = {
-        "temperature": 1,
-        "top_p": 0.95,
-        "top_k": 64,
-        "max_output_tokens": 8192,
-    }
-    model = genai.GenerativeModel(
-        model_name="gemini-2.0-flash",
-        generation_config=generation_config,
-    )
+# Set up Google Gemini. The model can be changed without touching the code by setting
+# GEMINI_MODEL in .env, which matters because Google retires models over time.
+DEFAULT_GEMINI_MODEL = "gemini-3.5-flash-lite"
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", DEFAULT_GEMINI_MODEL)
+GENERATION_CONFIG = types.GenerateContentConfig(temperature=1, top_p=0.95, max_output_tokens=8192)
+client = genai.Client(api_key=GEMINI_API_KEY) if GEMINI_API_KEY else None
+
+def ask_model(contents):
+    """Sends one request to Gemini and returns the text of its answer."""
+    response = client.models.generate_content(model=GEMINI_MODEL, contents=contents, config=GENERATION_CONFIG)
+    # The answer has no text when the model was blocked or returned nothing; treat that as a failure
+    # so callers show an error instead of an empty result.
+    if not response.text:
+        raise ValueError("the model returned no text")
+    return response.text
 
 # Set page config
 st.set_page_config(page_title="Chef's Fridge", layout="wide", page_icon="🍲", initial_sidebar_state="collapsed")
@@ -308,12 +311,11 @@ def _identify_items_cached(_images, photo_keys):
     """
     all_items = []
     for image in _images:
-        base64_image = base64.b64encode(image_to_bytes(image)).decode('utf-8')
-        response = model.generate_content([
+        answer = ask_model([
             "List all food items in this fridge image in a comma-separated format. Be specific and concise.",
-            {"mime_type": "image/jpeg", "data": base64_image}
+            types.Part.from_bytes(data=image_to_bytes(image), mime_type="image/jpeg"),
         ])
-        items = response.text.split(',')
+        items = answer.split(',')
         all_items.extend([item.strip() for item in items if item.strip()])
     return list(set(all_items))
 
@@ -375,8 +377,7 @@ def generate_recipe(items, diet_preference, cuisine_preference):
         For ingredients, list each on its own line without bullet points or numbers.
         """
         
-        response = model.generate_content(prompt)
-        recipe_text = response.text
+        recipe_text = ask_model(prompt)
         
         # Clean up formatting
         recipe_text = clean_text(recipe_text)

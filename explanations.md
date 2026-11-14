@@ -26,7 +26,7 @@ The code starts by bringing in some helpers (called libraries) to handle tasks l
 ```python
 import streamlit as st
 from PIL import Image
-import google.generativeai as genai
+from google import genai
 from fpdf import FPDF
 ```
 

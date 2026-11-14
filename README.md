@@ -21,7 +21,7 @@ Chef's Fridge is an AI-powered recipe generator that turns your leftovers into d
 ## Technology Stack
 
 - **Frontend**: Streamlit
-- **AI/ML**: Google Gemini 2.0 Flash API for image recognition and recipe generation
+- **AI/ML**: Google Gemini API (through the `google-genai` SDK) for image recognition and recipe generation. The model is set by `GEMINI_MODEL` and defaults to `gemini-3.5-flash-lite`
 - **Image Processing**: PIL (Python Imaging Library)
 - **PDF Generation**: FPDF
 - **Styling**: Custom CSS
@@ -30,7 +30,7 @@ Chef's Fridge is an AI-powered recipe generator that turns your leftovers into d
 
 ### Prerequisites
 
-- Python 3.7+
+- Python 3.11+
 - Google Gemini API key
 
 ### Setup
@@ -56,11 +56,21 @@ Chef's Fridge is an AI-powered recipe generator that turns your leftovers into d
    ```
    GEMINI_API_KEY=your_api_key_here
    ```
+   Optional: add `GEMINI_MODEL=some-other-model` to the same file to use a different Gemini model. Google retires models over time, so if requests start failing, try a current one here first.
 
 5. Run the application:
    ```bash
    streamlit run app.py
    ```
+
+## Tests
+
+The tests replace the Gemini client with a stand-in, so they need no API key or network:
+
+```bash
+pip install pytest
+pytest -q
+```
 
 ## Usage Guide
 
@@ -109,7 +119,7 @@ The full list of Python package requirements:
 ```
 streamlit>=1.27.0
 python-dotenv>=1.0.0
-google-generativeai>=0.3.0
+google-genai>=3.3.0
 pillow>=9.0.0
 fpdf>=1.7.2
 ```
