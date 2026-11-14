@@ -297,25 +297,38 @@ def is_duplicate(new_image, existing_images):
     new_hash = image_hash(new_image)
     return any(image_hash(img) == new_hash for img in existing_images)
 
-@st.cache_data
-def identify_items(_images):
-    if not GEMINI_API_KEY:
-        st.error("Cannot identify items: API key missing.")
-        return []
+@st.cache_data(show_spinner=False)
+def _identify_items_cached(_images, photo_keys):
+    """Asks the model what food is in each photo.
+
+    Streamlit cannot hash images, so `_images` is skipped when it builds the cache key.
+    `photo_keys` (one fingerprint per photo) is what tells one set of photos from another:
+    without it every call would return the first answer ever cached. Errors are raised,
+    not returned, so a failed request is never remembered.
+    """
     all_items = []
     for image in _images:
         base64_image = base64.b64encode(image_to_bytes(image)).decode('utf-8')
-        try:
-            response = model.generate_content([
-                "List all food items in this fridge image in a comma-separated format. Be specific and concise.",
-                {"mime_type": "image/jpeg", "data": base64_image}
-            ])
-            items = response.text.split(',')
-            all_items.extend([item.strip() for item in items if item.strip()])
-        except Exception as e:
-            st.error(f"Error identifying items: {str(e)}")
-            return []
+        response = model.generate_content([
+            "List all food items in this fridge image in a comma-separated format. Be specific and concise.",
+            {"mime_type": "image/jpeg", "data": base64_image}
+        ])
+        items = response.text.split(',')
+        all_items.extend([item.strip() for item in items if item.strip()])
     return list(set(all_items))
+
+def identify_items(images):
+    if not GEMINI_API_KEY:
+        st.error("Cannot identify items: API key missing.")
+        return []
+    try:
+        return _identify_items_cached(images, tuple(image_hash(image) for image in images))
+    except Exception as e:
+        st.error(f"Error identifying items: {str(e)}")
+        return []
+
+# Lets callers (and the tests) forget cached answers.
+identify_items.clear = _identify_items_cached.clear
 
 def clean_text(text):
     """Clean recipe text by removing asterisks, bullet points, etc."""
