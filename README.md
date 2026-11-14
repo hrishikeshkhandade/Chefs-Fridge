@@ -37,8 +37,8 @@ Chef's Fridge is an AI-powered recipe generator that turns your leftovers into d
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/hrishikeshkhandade/chefsridge.git
-   cd chefsridge
+   git clone https://github.com/hrishikeshkhandade/Chefs-Fridge.git
+   cd Chefs-Fridge
    ```
 
 2. Create a virtual environment:
@@ -144,7 +144,7 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 
 Hrishikesh Khandade - khandadehrishikesh@gmail.com
 
-Project Link: [https://github.com/hrishikeshkhandade/chefsridge](https://github.com/hrishikeshkhandade/chefsridge)
+Project Link: [https://github.com/hrishikeshkhandade/Chefs-Fridge](https://github.com/hrishikeshkhandade/Chefs-Fridge)
 
 ---
 
